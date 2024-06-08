@@ -11,8 +11,9 @@ import {
   where,
   getDocs,
 } from "firebase/firestore";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation"; // 修正点
 import Navigation from "../../components/Navigation";
+import Link from "next/link";
 
 export default function MyPage() {
   const [userName, setUserName] = useState("");
@@ -22,14 +23,13 @@ export default function MyPage() {
 
   useEffect(() => {
     if (user) {
-      const userDoc = doc(db, "users", user.uid);
-      getDoc(userDoc).then((doc) => {
-        if (doc.exists()) {
-          setUserName(doc.data().name);
+      const fetchUserData = async () => {
+        const userDoc = doc(db, "users", user.uid);
+        const userDocSnap = await getDoc(userDoc);
+        if (userDocSnap.exists()) {
+          setUserName(userDocSnap.data().name);
         }
-      });
 
-      const fetchUserQuestions = async () => {
         const q = query(
           collection(db, "questions"),
           where("userId", "==", user.uid)
@@ -42,11 +42,11 @@ export default function MyPage() {
         setUserQuestions(questionsData);
       };
 
-      fetchUserQuestions();
+      fetchUserData();
     } else {
       router.push("/login");
     }
-  }, [user]);
+  }, [user, router]);
 
   const handleUpdate = async () => {
     if (user) {
