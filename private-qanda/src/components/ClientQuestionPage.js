@@ -1,7 +1,6 @@
-"use client"; // クライアントコンポーネントであることを示します
+"use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   doc,
   getDoc,
@@ -10,14 +9,12 @@ import {
   addDoc,
   updateDoc,
 } from "firebase/firestore";
-import { db, auth } from "../../lib/firebase";
-import Navigation from "../../components/Navigation";
-import AnswerCard from "../../components/AnswerCard";
+import { db } from "@/lib/firebase";
+import Navigation from "@/components/Navigation";
+import AnswerCard from "@/components/AnswerCard";
 
-export default function QuestionPage() {
-  const router = useRouter();
-  const { id } = router.query;
-  const [question, setQuestion] = useState(null);
+export default function ClientQuestionPage({ id, initialQuestion }) {
+  const [question, setQuestion] = useState(initialQuestion);
   const [answers, setAnswers] = useState([]);
   const [newAnswer, setNewAnswer] = useState("");
   const [user, setUser] = useState(null);
@@ -27,20 +24,13 @@ export default function QuestionPage() {
     if (loggedInUser) {
       setUser(loggedInUser);
     } else {
-      router.push("/login"); // ログインしていない場合はログインページにリダイレクト
+      // ログインしていない場合はログインページにリダイレクト
+      window.location.href = "/login";
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     if (id) {
-      const fetchQuestion = async () => {
-        const questionDoc = doc(db, "questions", id);
-        const questionSnapshot = await getDoc(questionDoc);
-        if (questionSnapshot.exists()) {
-          setQuestion({ id: questionSnapshot.id, ...questionSnapshot.data() });
-        }
-      };
-
       const fetchAnswers = async () => {
         const answersCollection = collection(db, "questions", id, "answers");
         const answersSnapshot = await getDocs(answersCollection);
@@ -51,7 +41,6 @@ export default function QuestionPage() {
         setAnswers(answersData);
       };
 
-      fetchQuestion();
       fetchAnswers();
     }
   }, [id]);
@@ -66,7 +55,6 @@ export default function QuestionPage() {
       };
       await addDoc(collection(db, "questions", id, "answers"), answerData);
       setNewAnswer("");
-      // Fetch updated answers
       const answersCollection = collection(db, "questions", id, "answers");
       const answersSnapshot = await getDocs(answersCollection);
       const answersData = answersSnapshot.docs.map((doc) => ({
@@ -92,7 +80,6 @@ export default function QuestionPage() {
       if (answerSnapshot.exists()) {
         const currentLikes = answerSnapshot.data().likes || 0;
         await updateDoc(answerDoc, { likes: currentLikes + 1 });
-        // Update local state
         setAnswers((prevState) =>
           prevState.map((answer) =>
             answer.id === answerId
