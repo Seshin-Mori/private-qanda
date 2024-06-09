@@ -1,7 +1,6 @@
-// src/app/questions/page.js
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   doc,
@@ -10,39 +9,33 @@ import {
   getDocs,
   addDoc,
   updateDoc,
-  query,
-  orderBy,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import Navigation from "@/components/Navigation";
 import AnswerCard from "@/components/AnswerCard";
 
-export default function QuestionDetailPage() {
+export default function ClientQuestionPage({ initialQuestion }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [question, setQuestion] = useState(null);
+  const [question, setQuestion] = useState(initialQuestion);
   const [answers, setAnswers] = useState([]);
   const [newAnswer, setNewAnswer] = useState("");
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [questionAuthor, setQuestionAuthor] = useState(null);
 
   useEffect(() => {
     const loggedInUser = JSON.parse(localStorage.getItem("user"));
     if (loggedInUser) {
       setUser(loggedInUser);
     } else {
-      router.push("/login");
+      window.location.href = "/login";
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     const questionId = searchParams.get("questionId");
-    console.log("Question ID:", questionId);
     if (questionId) {
       fetchQuestionData(questionId);
-    } else {
-      setLoading(false);
     }
   }, [searchParams]);
 
@@ -55,54 +48,31 @@ export default function QuestionDetailPage() {
         const questionData = questionSnapshot.data();
         setQuestion({ id: questionSnapshot.id, ...questionData });
 
-        const userDocRef = doc(db, "users", questionData.userId);
-        const userSnapshot = await getDoc(userDocRef);
-
-        if (userSnapshot.exists()) {
-          setQuestionAuthor(userSnapshot.data());
-        } else {
-          console.error("User not found");
-        }
-
+        // 回答データを取得
         const answersCollection = collection(
           db,
           "questions",
           questionId,
           "answers"
         );
-        const answersQuery = query(answersCollection, orderBy("likes", "desc"));
-        const answersSnapshot = await getDocs(answersQuery);
-        const answersData = await Promise.all(
-          answersSnapshot.docs.map(async (docSnapshot) => {
-            const answerData = docSnapshot.data();
-            const answerUserDocRef = doc(db, "users", answerData.userId);
-            const answerUserSnapshot = await getDoc(answerUserDocRef);
-
-            return {
-              id: docSnapshot.id,
-              ...answerData,
-              userName: answerUserSnapshot.exists()
-                ? answerUserSnapshot.data().userName
-                : "Unknown",
-            };
-          })
-        );
-
-        console.log("Answers Data:", answersData);
-
+        const answersSnapshot = await getDocs(answersCollection);
+        const answersData = answersSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
         setAnswers(answersData);
       } else {
         console.error("Question not found");
       }
     } catch (error) {
-      console.error("Error fetching data: ", error);
+      console.error("Error fetching question data:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleAddAnswer = async () => {
-    if (user) {
+    if (user && question) {
       const answerData = {
         content: newAnswer,
         createdAt: new Date(),
@@ -115,14 +85,6 @@ export default function QuestionDetailPage() {
       );
       setNewAnswer("");
       fetchQuestionData(question.id);
-    }
-  };
-
-  const handleBestAnswer = async (answerId) => {
-    if (user && question.userId === user.userId) {
-      const questionDoc = doc(db, "questions", question.id);
-      await updateDoc(questionDoc, { bestAnswerId: answerId });
-      setQuestion((prevState) => ({ ...prevState, bestAnswerId: answerId }));
     }
   };
 
@@ -158,16 +120,13 @@ export default function QuestionDetailPage() {
       <div className='container mx-auto p-4'>
         <h1 className='text-2xl font-bold mb-4'>{question.title}</h1>
         <p className='mb-4'>{question.content}</p>
-        {questionAuthor && (
-          <p className='mb-4'>投稿者: {questionAuthor.userName}</p>
-        )}
-        {user && !question.bestAnswerId && (
+        {user && (
           <div className='mb-4'>
             <h2 className='text-xl font-bold mb-2'>あなたの回答</h2>
             <textarea
               value={newAnswer}
               onChange={(e) => setNewAnswer(e.target.value)}
-              placeholder='Write your answer here...'
+              placeholder='回答を入力'
               className='w-full p-2 border rounded mb-4'
             />
             <button
@@ -184,14 +143,7 @@ export default function QuestionDetailPage() {
             <AnswerCard
               key={answer.id}
               answer={answer}
-              isBestAnswer={question.bestAnswerId === answer.id}
-              onBestAnswer={() => handleBestAnswer(answer.id)}
               onLike={() => handleLike(answer.id)}
-              canSetBestAnswer={
-                user &&
-                question.userId === user.userId &&
-                !question.bestAnswerId
-              }
             />
           ))}
         </div>
