@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   doc,
@@ -14,7 +14,7 @@ import { db } from "@/lib/firebase";
 import Navigation from "@/components/Navigation";
 import AnswerCard from "@/components/AnswerCard";
 
-export default function ClientQuestionPage({ initialQuestion }) {
+function ClientQuestionPage({ initialQuestion }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [question, setQuestion] = useState(initialQuestion);
@@ -48,7 +48,6 @@ export default function ClientQuestionPage({ initialQuestion }) {
         const questionData = questionSnapshot.data();
         setQuestion({ id: questionSnapshot.id, ...questionData });
 
-        // 回答データを取得
         const answersCollection = collection(
           db,
           "questions",
@@ -149,5 +148,13 @@ export default function ClientQuestionPage({ initialQuestion }) {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PageWrapper(props) {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ClientQuestionPage {...props} />
+    </Suspense>
   );
 }
