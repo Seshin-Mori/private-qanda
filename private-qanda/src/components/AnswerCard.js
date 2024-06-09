@@ -1,3 +1,4 @@
+// src/components/AnswerCard.js
 "use client";
 
 export default function AnswerCard({

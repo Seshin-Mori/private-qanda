@@ -1,7 +1,8 @@
+// src/app/questions/page.js
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   doc,
   getDoc,
@@ -9,90 +10,99 @@ import {
   getDocs,
   addDoc,
   updateDoc,
-  getFirestore,
+  query,
+  orderBy,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import Navigation from "@/components/Navigation";
 import AnswerCard from "@/components/AnswerCard";
 
-// Firestoreのインスタンスを取得
-const firestoreInstance = getFirestore(db.app);
-
-export default function QuestionPage() {
+export default function QuestionDetailPage() {
   const router = useRouter();
-  const [id, setId] = useState(null); // 初期値をnullに設定
+  const searchParams = useSearchParams();
   const [question, setQuestion] = useState(null);
   const [answers, setAnswers] = useState([]);
   const [newAnswer, setNewAnswer] = useState("");
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [questionAuthor, setQuestionAuthor] = useState(null);
 
   useEffect(() => {
-    console.log("Checking if user is logged in...");
     const loggedInUser = JSON.parse(localStorage.getItem("user"));
     if (loggedInUser) {
-      console.log("User is logged in:", loggedInUser);
       setUser(loggedInUser);
     } else {
-      console.log("User is not logged in, redirecting to /login");
       router.push("/login");
     }
   }, [router]);
 
   useEffect(() => {
-    if (!router.isReady) {
-      console.log("Router is not ready");
-      return; // routerが準備できていない場合は何もしない
+    const questionId = searchParams.get("questionId");
+    console.log("Question ID:", questionId);
+    if (questionId) {
+      fetchQuestionData(questionId);
+    } else {
+      setLoading(false);
     }
-    const { id: queryId } = router.query;
-    console.log("Router is ready, queryId:", queryId);
-    if (queryId) {
-      setId(queryId);
-    }
-  }, [router.isReady, router.query]);
+  }, [searchParams]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (id) {
-        try {
-          const questionDocRef = doc(firestoreInstance, "questions", id);
-          const questionSnapshot = await getDoc(questionDocRef);
+  const fetchQuestionData = async (questionId) => {
+    try {
+      const questionDocRef = doc(db, "questions", questionId);
+      const questionSnapshot = await getDoc(questionDocRef);
 
-          if (questionSnapshot.exists()) {
-            const questionData = questionSnapshot.data();
+      if (questionSnapshot.exists()) {
+        const questionData = questionSnapshot.data();
+        setQuestion({ id: questionSnapshot.id, ...questionData });
 
-            // 回答をネストされたコレクションから取得 (where句で絞り込み)
-            const answersQuery = query(
-              collection(questionDocRef, "answers"),
-              // 例: 特定の条件で絞り込む場合
-              // where("createdAt", ">", new Date(Date.now() - 24 * 60 * 60 * 1000)) // 24時間以内の回答
-              limit(10) // 一度に取得する回答数を制限
-            );
-            const answersSnapshot = await getDocs(answersQuery);
-            const answersData = answersSnapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            }));
+        const userDocRef = doc(db, "users", questionData.userId);
+        const userSnapshot = await getDoc(userDocRef);
 
-            setQuestion({ id: questionSnapshot.id, ...questionData });
-            setAnswers(answersData);
-          } else {
-            console.log("Question does not exist");
-          }
-        } catch (error) {
-          console.error("Error fetching data: ", error);
-        } finally {
-          setLoading(false);
+        if (userSnapshot.exists()) {
+          setQuestionAuthor(userSnapshot.data());
+        } else {
+          console.error("User not found");
         }
-      }
-    };
 
-    fetchData();
-  }, [id]);
+        const answersCollection = collection(
+          db,
+          "questions",
+          questionId,
+          "answers"
+        );
+        const answersQuery = query(answersCollection, orderBy("likes", "desc"));
+        const answersSnapshot = await getDocs(answersQuery);
+        const answersData = await Promise.all(
+          answersSnapshot.docs.map(async (docSnapshot) => {
+            const answerData = docSnapshot.data();
+            const answerUserDocRef = doc(db, "users", answerData.userId);
+            const answerUserSnapshot = await getDoc(answerUserDocRef);
+
+            return {
+              id: docSnapshot.id,
+              ...answerData,
+              userName: answerUserSnapshot.exists()
+                ? answerUserSnapshot.data().userName
+                : "Unknown",
+            };
+          })
+        );
+
+        console.log("Answers Data:", answersData);
+
+        setAnswers(answersData);
+      } else {
+        console.error("Question not found");
+      }
+    } catch (error) {
+      console.error("Error fetching data: ", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAddAnswer = async () => {
     if (user) {
-      console.log("Adding new answer for user:", user);
       const answerData = {
         content: newAnswer,
         createdAt: new Date(),
@@ -100,59 +110,29 @@ export default function QuestionPage() {
         likes: 0,
       };
       await addDoc(
-        collection(firestoreInstance, "questions", id, "answers"),
+        collection(db, "questions", question.id, "answers"),
         answerData
       );
-      console.log("New answer added:", answerData);
       setNewAnswer("");
-      // Fetch updated answers
-      const answersCollection = collection(
-        firestoreInstance,
-        "questions",
-        id,
-        "answers"
-      );
-      const answersSnapshot = await getDocs(answersCollection);
-      const answersData = answersSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      console.log("Updated answers fetched:", answersData);
-      setAnswers(answersData);
+      fetchQuestionData(question.id);
     }
   };
 
   const handleBestAnswer = async (answerId) => {
     if (user && question.userId === user.userId) {
-      console.log("Setting best answer:", answerId);
-      const questionDoc = doc(firestoreInstance, "questions", id);
+      const questionDoc = doc(db, "questions", question.id);
       await updateDoc(questionDoc, { bestAnswerId: answerId });
       setQuestion((prevState) => ({ ...prevState, bestAnswerId: answerId }));
-      console.log("Best answer set:", answerId);
     }
   };
 
   const handleLike = async (answerId) => {
     if (user) {
-      console.log("Liking answer:", answerId);
-      const answerDoc = doc(
-        firestoreInstance,
-        "questions",
-        id,
-        "answers",
-        answerId
-      );
+      const answerDoc = doc(db, "questions", question.id, "answers", answerId);
       const answerSnapshot = await getDoc(answerDoc);
       if (answerSnapshot.exists()) {
         const currentLikes = answerSnapshot.data().likes || 0;
         await updateDoc(answerDoc, { likes: currentLikes + 1 });
-        console.log(
-          "Answer liked:",
-          answerId,
-          "new likes count:",
-          currentLikes + 1
-        );
-        // Update local state
         setAnswers((prevState) =>
           prevState.map((answer) =>
             answer.id === answerId
@@ -165,12 +145,10 @@ export default function QuestionPage() {
   };
 
   if (loading) {
-    console.log("Loading data...");
     return <div>Loading...</div>;
   }
 
   if (!question) {
-    console.log("No question found for id:", id);
     return <div>Question not found.</div>;
   }
 
@@ -180,6 +158,9 @@ export default function QuestionPage() {
       <div className='container mx-auto p-4'>
         <h1 className='text-2xl font-bold mb-4'>{question.title}</h1>
         <p className='mb-4'>{question.content}</p>
+        {questionAuthor && (
+          <p className='mb-4'>投稿者: {questionAuthor.userName}</p>
+        )}
         {user && !question.bestAnswerId && (
           <div className='mb-4'>
             <h2 className='text-xl font-bold mb-2'>あなたの回答</h2>

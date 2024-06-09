@@ -18,6 +18,7 @@ export default function ClientQuestionPage({ id, initialQuestion }) {
   const [answers, setAnswers] = useState([]);
   const [newAnswer, setNewAnswer] = useState("");
   const [user, setUser] = useState(null);
+  const [questionAuthor, setQuestionAuthor] = useState(null);
 
   useEffect(() => {
     const loggedInUser = JSON.parse(localStorage.getItem("user"));
@@ -31,17 +32,38 @@ export default function ClientQuestionPage({ id, initialQuestion }) {
 
   useEffect(() => {
     if (id) {
-      const fetchAnswers = async () => {
-        const answersCollection = collection(db, "questions", id, "answers");
-        const answersSnapshot = await getDocs(answersCollection);
-        const answersData = answersSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setAnswers(answersData);
+      const fetchQuestionData = async () => {
+        const questionDocRef = doc(db, "questions", id);
+        const questionSnapshot = await getDoc(questionDocRef);
+
+        if (questionSnapshot.exists()) {
+          const questionData = questionSnapshot.data();
+          setQuestion({ id: questionSnapshot.id, ...questionData });
+
+          // 投稿者情報を取得
+          const userDocRef = doc(db, "users", questionData.userId);
+          const userSnapshot = await getDoc(userDocRef);
+
+          if (userSnapshot.exists()) {
+            setQuestionAuthor(userSnapshot.data().userName);
+          } else {
+            console.error("User not found");
+          }
+
+          // 回答データを取得
+          const answersCollection = collection(questionDocRef, "answers");
+          const answersSnapshot = await getDocs(answersCollection);
+          const answersData = answersSnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+          setAnswers(answersData);
+        } else {
+          console.error("Question not found");
+        }
       };
 
-      fetchAnswers();
+      fetchQuestionData();
     }
   }, [id]);
 
@@ -101,13 +123,14 @@ export default function ClientQuestionPage({ id, initialQuestion }) {
       <div className='container mx-auto p-4'>
         <h1 className='text-2xl font-bold mb-4'>{question.title}</h1>
         <p className='mb-4'>{question.content}</p>
+        {questionAuthor && <p className='mb-4'>投稿者: {questionAuthor}</p>}
         {user && !question.bestAnswerId && (
           <div className='mb-4'>
             <h2 className='text-xl font-bold mb-2'>あなたの回答</h2>
             <textarea
               value={newAnswer}
               onChange={(e) => setNewAnswer(e.target.value)}
-              placeholder='Write your answer here...'
+              placeholder='回答を入力'
               className='w-full p-2 border rounded mb-4'
             />
             <button
