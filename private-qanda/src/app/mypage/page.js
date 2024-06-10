@@ -1,5 +1,5 @@
 "use client";
-
+//マイページは廃止予定
 import { useState, useEffect } from "react";
 import { auth, db } from "../../lib/firebase";
 import {

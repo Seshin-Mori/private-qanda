@@ -5,11 +5,13 @@ import { collection, addDoc } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useRouter } from "next/navigation";
 import Navigation from "../../components/Navigation";
+import { validateNotEmpty } from "../../utils/validation"; // バリデーション関数のインポート
 
 export default function AskPage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [user, setUser] = useState(null);
+  const [error, setError] = useState(""); // エラーメッセージの状態を追加
   const router = useRouter();
 
   useEffect(() => {
@@ -27,6 +29,12 @@ export default function AskPage() {
 
     if (!user) {
       console.error("No user is logged in");
+      return;
+    }
+
+    if (!validateNotEmpty(title)) {
+      // タイトルのバリデーションチェック
+      setError("タイトルは必須です。");
       return;
     }
 
@@ -54,7 +62,10 @@ export default function AskPage() {
           <input
             type='text'
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              setError(""); // ユーザーが入力を始めたらエラーメッセージをクリア
+            }}
             placeholder='タイトル'
             className='w-full p-2 border rounded mb-4'
           />
@@ -64,6 +75,8 @@ export default function AskPage() {
             placeholder='本文'
             className='w-full p-2 border rounded mb-4'
           />
+          {error && <p className='text-red-500 mb-4'>{error}</p>}{" "}
+          {/* エラーメッセージの表示 */}
           <button
             type='submit'
             className='w-full p-2 font-bold text-white bg-blue-500 rounded'

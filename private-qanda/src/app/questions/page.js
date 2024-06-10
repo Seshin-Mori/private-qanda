@@ -9,10 +9,13 @@ import {
   getDocs,
   addDoc,
   updateDoc,
+  query,
+  orderBy,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import Navigation from "@/components/Navigation";
 import AnswerCard from "@/components/AnswerCard";
+import { validateNotEmpty } from "../../utils/validation";
 
 function ClientQuestionPage({ initialQuestion }) {
   const router = useRouter();
@@ -22,6 +25,8 @@ function ClientQuestionPage({ initialQuestion }) {
   const [newAnswer, setNewAnswer] = useState("");
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [replyNumber, setReplyNumber] = useState(1);
 
   useEffect(() => {
     const loggedInUser = JSON.parse(localStorage.getItem("user"));
@@ -54,12 +59,21 @@ function ClientQuestionPage({ initialQuestion }) {
           questionId,
           "answers"
         );
-        const answersSnapshot = await getDocs(answersCollection);
+        const answersSnapshot = await getDocs(
+          query(answersCollection, orderBy("replyNumber", "asc"))
+        );
         const answersData = answersSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
         setAnswers(answersData);
+
+        if (answersData.length > 0) {
+          const maxReplyNumber = Math.max(
+            ...answersData.map((answer) => answer.replyNumber || 0)
+          );
+          setReplyNumber(maxReplyNumber + 1);
+        }
       } else {
         console.error("Question not found");
       }
@@ -71,18 +85,27 @@ function ClientQuestionPage({ initialQuestion }) {
   };
 
   const handleAddAnswer = async () => {
+    if (!validateNotEmpty(newAnswer)) {
+      setError("回答を入力してください。");
+      return;
+    }
+    setError("");
+
     if (user && question) {
       const answerData = {
         content: newAnswer,
         createdAt: new Date(),
         userId: user.userId,
         likes: 0,
+        replyNumber: replyNumber,
       };
       await addDoc(
         collection(db, "questions", question.id, "answers"),
         answerData
       );
       setNewAnswer("");
+      setReplyNumber(replyNumber + 1);
+
       fetchQuestionData(question.id);
     }
   };
@@ -105,6 +128,10 @@ function ClientQuestionPage({ initialQuestion }) {
     }
   };
 
+  const handleReply = (replyNumber) => {
+    setNewAnswer((prev) => `${prev}>>${replyNumber} `);
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -119,6 +146,18 @@ function ClientQuestionPage({ initialQuestion }) {
       <div className='container mx-auto p-4'>
         <h1 className='text-2xl font-bold mb-4'>{question.title}</h1>
         <p className='mb-4'>{question.content}</p>
+
+        <h2 className='text-xl font-bold mb-2'>回答</h2>
+        <div className='space-y-4'>
+          {answers.map((answer) => (
+            <AnswerCard
+              key={answer.id}
+              answer={answer}
+              onLike={() => handleLike(answer.id)}
+              onReply={() => handleReply(answer.replyNumber)}
+            />
+          ))}
+        </div>
         {user && (
           <div className='mb-4'>
             <h2 className='text-xl font-bold mb-2'>あなたの回答</h2>
@@ -128,6 +167,7 @@ function ClientQuestionPage({ initialQuestion }) {
               placeholder='回答を入力'
               className='w-full p-2 border rounded mb-4'
             />
+            {error && <p className='text-red-500 mb-4'>{error}</p>}
             <button
               onClick={handleAddAnswer}
               className='w-full p-2 font-bold text-white bg-blue-500 rounded'
@@ -136,16 +176,6 @@ function ClientQuestionPage({ initialQuestion }) {
             </button>
           </div>
         )}
-        <h2 className='text-xl font-bold mb-2'>回答</h2>
-        <div className='space-y-4'>
-          {answers.map((answer) => (
-            <AnswerCard
-              key={answer.id}
-              answer={answer}
-              onLike={() => handleLike(answer.id)}
-            />
-          ))}
-        </div>
       </div>
     </div>
   );

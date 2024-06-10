@@ -23,9 +23,13 @@ export default function Navigation() {
 
   return (
     <nav className='p-4 bg-gray-800 text-white'>
-      <ul className='flex flex-wrap space-x-4'>
+      <ul className='flex flex-wrap space-x-4 space-y-2'>
         <li className='w-full sm:w-auto'>
-          <Link href='/'>質問サイト（仮）</Link>
+          <Link href='/'>
+            <button className='w-full sm:w-auto bg-green-500 text-white px-4 py-2 rounded'>
+              トップページへ
+            </button>
+          </Link>
         </li>
         <li className='w-full sm:w-auto'>
           <Link href='/ask'>
@@ -36,9 +40,9 @@ export default function Navigation() {
         </li>
         {user ? (
           <>
-            <li className='w-full sm:w-auto flex items-center'>
+            {/* <li className='w-full sm:w-auto flex items-center'>
               ログインユーザー：{user.userName}
-            </li>
+            </li> */}
             <li className='w-full sm:w-auto'>
               <button
                 onClick={handleLogout}
@@ -52,7 +56,7 @@ export default function Navigation() {
           <li className='w-full sm:w-auto'>
             <Link href='/login'>
               <button className='w-full sm:w-auto bg-green-500 text-white px-4 py-2 rounded'>
-                Login
+                ログイン
               </button>
             </Link>
           </li>
