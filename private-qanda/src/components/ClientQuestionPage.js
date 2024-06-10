@@ -15,11 +15,7 @@ import {
 import { db } from "@/lib/firebase";
 import Navigation from "@/components/Navigation";
 import AnswerCard from "@/components/AnswerCard";
-import { sortAnswersByReplyNumber } from "../../utils/sortAnswers";
-
-export const validateNotEmpty = (input) => {
-  return input.trim().length > 0;
-};
+import { validateNotEmpty } from "../../utils/validation";
 
 function ClientQuestionPage({ initialQuestion }) {
   const router = useRouter();
@@ -70,9 +66,8 @@ function ClientQuestionPage({ initialQuestion }) {
           id: doc.id,
           ...doc.data(),
         }));
-        setAnswers(sortAnswersByReplyNumber(answersData));
+        setAnswers(answersData);
 
-        // 最新のリプライ番号を取得
         if (answersData.length > 0) {
           const maxReplyNumber = Math.max(
             ...answersData.map((answer) => answer.replyNumber || 0)
@@ -102,14 +97,14 @@ function ClientQuestionPage({ initialQuestion }) {
         createdAt: new Date(),
         userId: user.userId,
         likes: 0,
-        replyNumber: replyNumber, // リプライ番号を追加
+        replyNumber: replyNumber,
       };
       await addDoc(
         collection(db, "questions", question.id, "answers"),
         answerData
       );
       setNewAnswer("");
-      setReplyNumber(replyNumber + 1); // 次のリプライ番号を設定
+      setReplyNumber(replyNumber + 1);
 
       fetchQuestionData(question.id);
     }
