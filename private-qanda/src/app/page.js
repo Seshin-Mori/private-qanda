@@ -50,10 +50,22 @@ export default function HomePage() {
     }
 
     const querySnapshot = await getDocs(q);
-    const questionsData = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const questionsData = await Promise.all(
+      querySnapshot.docs.map(async (doc) => {
+        const answersCollection = collection(
+          db,
+          "questions",
+          doc.id,
+          "answers"
+        );
+        const answersSnapshot = await getDocs(answersCollection);
+        return {
+          id: doc.id,
+          ...doc.data(),
+          answerCount: answersSnapshot.size,
+        };
+      })
+    );
     setQuestions(questionsData);
     setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1]);
 
@@ -81,10 +93,22 @@ export default function HomePage() {
       limit(PAGE_SIZE)
     );
     const querySnapshot = await getDocs(q);
-    const questionsData = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const questionsData = await Promise.all(
+      querySnapshot.docs.map(async (doc) => {
+        const answersCollection = collection(
+          db,
+          "questions",
+          doc.id,
+          "answers"
+        );
+        const answersSnapshot = await getDocs(answersCollection);
+        return {
+          id: doc.id,
+          ...doc.data(),
+          answerCount: answersSnapshot.size,
+        };
+      })
+    );
     setQuestions(questionsData);
     setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1]);
     setIsFirstPage(true);
