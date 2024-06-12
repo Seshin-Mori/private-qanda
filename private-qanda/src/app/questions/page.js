@@ -159,7 +159,8 @@ function ClientQuestionPage({ initialQuestion }) {
           ))}
         </div>
         {user && (
-          <div className='mb-4'>
+          <div className='mt-8 mb-4'>
+            {" "}
             <h2 className='text-xl font-bold mb-2'>あなたの回答</h2>
             <textarea
               value={newAnswer}
