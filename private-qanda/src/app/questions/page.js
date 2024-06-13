@@ -23,6 +23,7 @@ function ClientQuestionPage({ initialQuestion }) {
   const [question, setQuestion] = useState(initialQuestion);
   const [answers, setAnswers] = useState([]);
   const [newAnswer, setNewAnswer] = useState("");
+  const [handleName, setHandleName] = useState("");
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -98,12 +99,14 @@ function ClientQuestionPage({ initialQuestion }) {
         userId: user.userId,
         likes: 0,
         replyNumber: replyNumber,
+        handleName: handleName || "名無しさん",
       };
       await addDoc(
         collection(db, "questions", question.id, "answers"),
         answerData
       );
       setNewAnswer("");
+      setHandleName("");
       setReplyNumber(replyNumber + 1);
 
       fetchQuestionData(question.id);
@@ -166,6 +169,13 @@ function ClientQuestionPage({ initialQuestion }) {
         {user && (
           <div className='mt-8 mb-4'>
             <h2 className='text-xl font-bold mb-2'>レスを投稿する</h2>
+            <input
+              type='text'
+              value={handleName}
+              onChange={(e) => setHandleName(e.target.value)}
+              placeholder='ハンドルネーム（空白可）'
+              className='w-full p-2 border rounded mb-4'
+            />
             <textarea
               value={newAnswer}
               onChange={(e) => setNewAnswer(e.target.value)}
