@@ -16,6 +16,9 @@ export default function AnswerCard({ answer, onLike, onReply }) {
         </p>
         <p className='mb-1'>{answer.content}</p>
       </div>
+      <div className='text-gray-600 text-sm mb-2'>
+        いいね: {answer.likes || 0}
+      </div>
       <div className='flex space-x-4'>
         <button
           onClick={onLike}
