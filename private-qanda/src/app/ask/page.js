@@ -57,7 +57,7 @@ export default function AskPage() {
     <div>
       <Navigation />
       <div className='container mx-auto p-4'>
-        <h1 className='text-2xl font-bold mb-4'>質問を投稿</h1>
+        <h1 className='text-2xl font-bold mb-4'>スレを投稿</h1>
         <form onSubmit={handleSubmit}>
           <input
             type='text'

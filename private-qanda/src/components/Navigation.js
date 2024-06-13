@@ -23,37 +23,32 @@ export default function Navigation() {
 
   return (
     <nav className='p-4 bg-gray-800 text-white'>
-      <ul className='flex flex-wrap space-x-4 space-y-2'>
-        <li className='w-full sm:w-auto'>
+      <ul className='flex flex-col sm:flex-row sm:space-x-4'>
+        <li className='mb-2 sm:mb-0'>
           <Link href='/'>
             <button className='w-full sm:w-auto bg-green-500 text-white px-4 py-2 rounded'>
               トップページへ
             </button>
           </Link>
         </li>
-        <li className='w-full sm:w-auto'>
+        <li className='mb-2 sm:mb-0'>
           <Link href='/ask'>
             <button className='w-full sm:w-auto bg-blue-500 text-white px-4 py-2 rounded'>
-              質問を投稿する
+              スレを立てる
             </button>
           </Link>
         </li>
         {user ? (
-          <>
-            {/* <li className='w-full sm:w-auto flex items-center'>
-              ログインユーザー：{user.userName}
-            </li> */}
-            <li className='w-full sm:w-auto'>
-              <button
-                onClick={handleLogout}
-                className='w-full sm:w-auto bg-red-500 text-white px-4 py-2 rounded'
-              >
-                ログアウト
-              </button>
-            </li>
-          </>
+          <li className='mb-2 sm:mb-0'>
+            <button
+              onClick={handleLogout}
+              className='w-full sm:w-auto bg-red-500 text-white px-4 py-2 rounded'
+            >
+              ログアウト
+            </button>
+          </li>
         ) : (
-          <li className='w-full sm:w-auto'>
+          <li className='mb-2 sm:mb-0'>
             <Link href='/login'>
               <button className='w-full sm:w-auto bg-green-500 text-white px-4 py-2 rounded'>
                 ログイン

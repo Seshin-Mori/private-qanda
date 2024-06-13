@@ -57,10 +57,10 @@ export default function LoginPage() {
             className='w-full p-2 border rounded'
           />
           <input
-            type='パスワード'
+            type='password'
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder='Password'
+            placeholder='パスワード'
             className='w-full p-2 border rounded'
           />
           <button

@@ -86,7 +86,7 @@ function ClientQuestionPage({ initialQuestion }) {
 
   const handleAddAnswer = async () => {
     if (!validateNotEmpty(newAnswer)) {
-      setError("回答を入力してください。");
+      setError("レスを入力してください。");
       return;
     }
     setError("");
@@ -147,7 +147,7 @@ function ClientQuestionPage({ initialQuestion }) {
         <h1 className='text-2xl font-bold mb-4'>{question.title}</h1>
         <p className='mb-4'>{question.content}</p>
 
-        <h2 className='text-xl font-bold mb-2'>回答</h2>
+        <h2 className='text-xl font-bold mb-2'>レス</h2>
         <div className='space-y-4'>
           {answers.map((answer) => (
             <AnswerCard
@@ -160,11 +160,11 @@ function ClientQuestionPage({ initialQuestion }) {
         </div>
         {user && (
           <div className='mb-4'>
-            <h2 className='text-xl font-bold mb-2'>あなたの回答</h2>
+            <h2 className='text-xl font-bold mb-2'>レスを投稿する</h2>
             <textarea
               value={newAnswer}
               onChange={(e) => setNewAnswer(e.target.value)}
-              placeholder='回答を入力'
+              placeholder='レスを入力'
               className='w-full p-2 border rounded mb-4'
             />
             {error && <p className='text-red-500 mb-4'>{error}</p>}
@@ -172,7 +172,7 @@ function ClientQuestionPage({ initialQuestion }) {
               onClick={handleAddAnswer}
               className='w-full p-2 font-bold text-white bg-blue-500 rounded'
             >
-              回答を投稿
+              レスを投稿
             </button>
           </div>
         )}

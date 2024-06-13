@@ -119,7 +119,7 @@ export default function HomePage() {
     <div>
       <Navigation />
       <div className='container mx-auto p-4'>
-        <h1 className='text-2xl font-bold mb-4'>最新の質問</h1>
+        <h1 className='text-2xl font-bold mb-4'>最新のスレ一覧</h1>
         <div className='space-y-4'>
           {questions.map((question) => (
             <QuestionCard key={question.id} question={question} />
