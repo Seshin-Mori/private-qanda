@@ -29,7 +29,7 @@ export default function AnswerCard({ answer, onLike, onReply }) {
           {new Date(answer.createdAt.seconds * 1000).toLocaleString()}
         </p>
         <p
-          className='mb-1'
+          className='mb-1 break-words'
           dangerouslySetInnerHTML={convertContentToLinks(answer.content)}
         ></p>
       </div>
