@@ -2,6 +2,20 @@
 
 export default function AnswerCard({ answer, onLike, onReply }) {
   const handleName = answer.handleName || "名無しさん";
+
+  const convertContentToLinks = (content) => {
+    const urlRegex =
+      /((https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gi;
+    const convertedContent = content
+      .replace(
+        urlRegex,
+        (url) =>
+          `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-500 underline">${url}</a>`
+      )
+      .replace(/\n/g, "<br>");
+    return { __html: convertedContent };
+  };
+
   return (
     <div className='p-4 bg-white shadow-md rounded-lg mb-4'>
       <div className='flex flex-col mb-2'>
@@ -14,7 +28,10 @@ export default function AnswerCard({ answer, onLike, onReply }) {
         <p className='text-sm text-gray-600 mb-1'>
           {new Date(answer.createdAt.seconds * 1000).toLocaleString()}
         </p>
-        <p className='mb-1'>{answer.content}</p>
+        <p
+          className='mb-1'
+          dangerouslySetInnerHTML={convertContentToLinks(answer.content)}
+        ></p>
       </div>
       <div className='text-gray-600 text-sm mb-2'>
         いいね: {answer.likes || 0}
